@@ -3,9 +3,10 @@ import pandas as pd
 from db import get_connection
 
 
-def import_trip(cursor):
+def import_vehicle(cursor):
+
     base_dir = Path(__file__).resolve().parent
-    file_path = base_dir.parent / "trip.parquet"
+    file_path = base_dir.parent / "vehicle.parquet"
 
     df = pd.read_parquet(file_path)
 
@@ -14,36 +15,30 @@ def import_trip(cursor):
     print(df.head())
 
     query = """
-    INSERT INTO public.trip (
-        trip_id,
+    INSERT INTO public.vehicle (
         vehicle_id,
-        start_ts,
-        end_ts,
-        start_geom,
-        end_geom,
-        distance_km
+        vehicle_type_id,
+        vehicle_status_id,
+        plate_number,
+        make,
+        model,
+        year,
+        created_at
     )
-    VALUES (
-        %s,
-        %s,
-        %s,
-        %s,
-        ST_GeomFromEWKB(decode(%s, 'hex')),
-        ST_GeomFromEWKB(decode(%s, 'hex')),
-        %s
-    )
-    ON CONFLICT (trip_id) DO NOTHING;
+    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+    ON CONFLICT (vehicle_id) DO NOTHING;
     """
 
     for _, row in df.iterrows():
         cursor.execute(query, (
-            row["trip_id"],
             row["vehicle_id"],
-            row["start_ts"],
-            row["end_ts"],
-            row["start_geom"],
-            row["end_geom"],
-            row["distance_km"]
+            row["vehicle_type_id"],
+            row["vehicle_status_id"],
+            row["plate_number"],
+            row["make"],
+            row["model"],
+            row["year"],
+            row["created_at"]
         ))
 
 
@@ -52,9 +47,9 @@ def main():
     cursor = conn.cursor()
 
     try:
-        import_trip(cursor)
+        import_vehicle(cursor)
         conn.commit()
-        print("Trip imported.")
+        print("Vehicle importate")
 
     except Exception as e:
         conn.rollback()
