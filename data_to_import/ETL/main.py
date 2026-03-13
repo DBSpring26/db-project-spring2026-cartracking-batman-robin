@@ -3,33 +3,25 @@ import pandas as pd
 from db import get_connection
 
 
-def import_location_ping(cursor):
+def import_vehicle_kind(cursor):
     base_dir = Path(__file__).resolve().parent
-    file_path = base_dir.parent / "location_ping.parquet"
+    file_path = base_dir.parent / "vehicle_kind.parquet"
 
     df = pd.read_parquet(file_path)
 
     query = """
-    INSERT INTO public.location_ping (
-        ping_id,
-        vehicle_id,
-        ts,
-        geom,
-        speed_kph,
-        heading_deg
+    INSERT INTO public.vehicle_kind (
+        vehicle_kind_id,
+        name
     )
-    VALUES (%s,%s,%s,ST_GeomFromEWKB(decode(%s,'hex')),%s,%s)
-    ON CONFLICT (ping_id) DO NOTHING;
+    VALUES (%s,%s)
+    ON CONFLICT (vehicle_kind_id) DO NOTHING;
     """
 
     for _, row in df.iterrows():
         cursor.execute(query, (
-            row["ping_id"],
-            row["vehicle_id"],
-            row["ts"],
-            row["geom"],
-            row["speed_kph"],
-            row["heading_deg"]
+            row["vehicle_kind_id"],
+            row["name"]
         ))
 
 
@@ -38,11 +30,11 @@ def main():
     cursor = conn.cursor()
 
     try:
-        print("Importing location_ping...")
-        import_location_ping(cursor)
+        print("Importing vehicle_kind...")
+        import_vehicle_kind(cursor)
 
         conn.commit()
-        print("All Imported.")
+        print("All Imported")
 
     except Exception as e:
         conn.rollback()
