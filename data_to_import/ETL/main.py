@@ -65,6 +65,38 @@ def import_parking_area(cursor):
         ))
 
 
+def import_road_segment(cursor):
+    base_dir = Path(__file__).resolve().parent
+    file_path = base_dir.parent / "road_segment.parquet"
+
+    df = pd.read_parquet(file_path)
+
+    query = """
+    INSERT INTO public.road_segment (
+        road_id,
+        name,
+        speed_limit_kph,
+        geom,
+        created_at,
+        is_oneway,
+        direction
+    )
+    VALUES (%s,%s,%s,ST_GeomFromEWKB(decode(%s,'hex')),%s,%s,%s)
+    ON CONFLICT (road_id) DO NOTHING;
+    """
+
+    for _, row in df.iterrows():
+        cursor.execute(query, (
+            row["road_id"],
+            row["name"],
+            row["speed_limit_kph"],
+            row["geom"],
+            row["created_at"],
+            row["is_oneway"],
+            row["direction"]
+        ))
+
+
 def main():
     conn = get_connection()
     cursor = conn.cursor()
@@ -76,8 +108,11 @@ def main():
         print("Importing parking_area...")
         import_parking_area(cursor)
 
+        print("Importing road_segment...")
+        import_road_segment(cursor)
+
         conn.commit()
-        print("All Imported.")
+        print("All Imported")
 
     except Exception as e:
         conn.rollback()
