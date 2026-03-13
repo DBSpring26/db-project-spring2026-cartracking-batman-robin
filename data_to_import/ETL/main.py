@@ -2,48 +2,35 @@ from pathlib import Path
 import pandas as pd
 from db import get_connection
 
+base_dir = Path(__file__).resolve().parent
+file_path = base_dir.parent / "vehicle_type.parquet"
 
-def import_vehicle_kind(cursor):
-    base_dir = Path(__file__).resolve().parent
-    file_path = base_dir.parent / "vehicle_kind.parquet"
+df = pd.read_parquet(file_path)
 
-    df = pd.read_parquet(file_path)
+conn = get_connection()
+cursor = conn.cursor()
 
-    query = """
-    INSERT INTO public.vehicle_kind (
-        vehicle_kind_id,
-        name
+print("Importing vehicle_type...")
+
+for _, row in df.iterrows():
+    cursor.execute(
+        """
+        INSERT INTO public.vehicle_type 
+        (id, vehicle_kind_id, fuel_type_id, emissions_rating, created_at)
+        VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT (id) DO NOTHING;
+        """,
+        (
+            int(row["id"]),
+            int(row["vehicle_kind_id"]),
+            int(row["fuel_type_id"]),
+            float(row["emissions_rating"]),
+            row["created_at"]
+        )
     )
-    VALUES (%s,%s)
-    ON CONFLICT (vehicle_kind_id) DO NOTHING;
-    """
 
-    for _, row in df.iterrows():
-        cursor.execute(query, (
-            row["vehicle_kind_id"],
-            row["name"]
-        ))
+conn.commit()
+cursor.close()
+conn.close()
 
-
-def main():
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    try:
-        print("Importing vehicle_kind...")
-        import_vehicle_kind(cursor)
-
-        conn.commit()
-        print("All Imported")
-
-    except Exception as e:
-        conn.rollback()
-        print("Error:", e)
-
-    finally:
-        cursor.close()
-        conn.close()
-
-
-if __name__ == "__main__":
-    main()
+print("All Imported.")
