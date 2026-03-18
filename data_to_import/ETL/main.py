@@ -1,36 +1,57 @@
-from pathlib import Path
-import pandas as pd
+from import_fuel_type import import_fuel_type
+from import_vehicle_kind import import_vehicle_kind
+from import_vehicle_status import import_vehicle_status
+from import_vehicle_type import import_vehicle_type
+from import_vehicle import import_vehicle
+from import_parking_area import import_parking_area
+from import_road_segment import import_road_segment
+from import_location_ping import import_location_ping
+from import_trip import import_trip
 from db import get_connection
 
-base_dir = Path(__file__).resolve().parent
-file_path = base_dir.parent / "vehicle_type.parquet"
+def main():
+    conn = get_connection()
+    cursor = conn.cursor()
 
-df = pd.read_parquet(file_path)
+    try:
+        print("Importing fuel_type...")
+        import_fuel_type(cursor)
 
-conn = get_connection()
-cursor = conn.cursor()
+        print("Importing vehicle_kind...")
+        import_vehicle_kind(cursor)
 
-print("Importing vehicle_type...")
+        print("Importing vehicle_status...")
+        import_vehicle_status(cursor)
 
-for _, row in df.iterrows():
-    cursor.execute(
-        """
-        INSERT INTO public.vehicle_type 
-        (id, vehicle_kind_id, fuel_type_id, emissions_rating, created_at)
-        VALUES (%s, %s, %s, %s, %s)
-        ON CONFLICT (id) DO NOTHING;
-        """,
-        (
-            int(row["id"]),
-            int(row["vehicle_kind_id"]),
-            int(row["fuel_type_id"]),
-            float(row["emissions_rating"]),
-            row["created_at"]
-        )
-    )
+        print("Importing vehicle_type...")
+        import_vehicle_type(cursor)
 
-conn.commit()
-cursor.close()
-conn.close()
+        print("Importing vehicle...")
+        import_vehicle(cursor)
 
-print("All Imported.")
+        print("Importing parking_area...")
+        import_parking_area(cursor)
+
+        print("Importing road_segment...")
+        import_road_segment(cursor)
+
+        print("Importing location_ping...")
+        import_location_ping(cursor)
+
+        print("Importing trip...")
+        import_trip(cursor)
+
+        conn.commit()
+        print("All Imported.")
+
+    except Exception as e:
+        conn.rollback()
+        print("Error:", e)
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+if __name__ == "__main__":
+    main()
