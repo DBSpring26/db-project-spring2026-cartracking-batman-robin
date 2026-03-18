@@ -21,6 +21,7 @@ def import_vehicle(cursor):
     ON CONFLICT (vehicle_id) DO NOTHING;
     """
 
+    
     for _, row in df.iterrows():
         cursor.execute(query, (
             int(row["vehicle_id"]),
