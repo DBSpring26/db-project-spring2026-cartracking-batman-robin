@@ -1,3 +1,4 @@
+from db import get_connection
 from import_fuel_type import import_fuel_type
 from import_vehicle_kind import import_vehicle_kind
 from import_vehicle_status import import_vehicle_status
@@ -7,7 +8,7 @@ from import_parking_area import import_parking_area
 from import_road_segment import import_road_segment
 from import_location_ping import import_location_ping
 from import_trip import import_trip
-from db import get_connection
+
 
 def main():
     conn = get_connection()
