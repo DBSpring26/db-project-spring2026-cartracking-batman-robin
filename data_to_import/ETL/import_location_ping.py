@@ -1,6 +1,7 @@
 from pathlib import Path
+from decimal import Decimal
 import pandas as pd
-from db import get_connection
+
 
 def import_location_ping(cursor):
     file_path = Path(__file__).resolve().parent.parent / "location_ping.parquet"
@@ -20,11 +21,14 @@ def import_location_ping(cursor):
     """
 
     for _, row in df.iterrows():
+        speed_kph = None if pd.isna(row["speed_kph"]) else Decimal(str(row["speed_kph"]))
+        heading_deg = None if pd.isna(row["heading_deg"]) else Decimal(str(row["heading_deg"]))
+
         cursor.execute(query, (
             int(row["ping_id"]),
             int(row["vehicle_id"]),
             row["ts"],
             row["geom"],
-            float(row["speed_kph"]) if pd.notna(row["speed_kph"]) else None,
-            float(row["heading_deg"]) if pd.notna(row["heading_deg"]) else None
+            speed_kph,
+            heading_deg
         ))

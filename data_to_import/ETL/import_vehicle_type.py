@@ -1,6 +1,7 @@
 from pathlib import Path
+from decimal import Decimal
 import pandas as pd
-from db import get_connection
+
 
 def import_vehicle_type(cursor):
     file_path = Path(__file__).resolve().parent.parent / "vehicle_type.parquet"
@@ -19,11 +20,12 @@ def import_vehicle_type(cursor):
     """
 
     for _, row in df.iterrows():
+        emissions_rating = None if pd.isna(row["emissions_rating"]) else Decimal(str(row["emissions_rating"]))
+
         cursor.execute(query, (
             int(row["id"]),
             int(row["vehicle_kind_id"]),
             int(row["fuel_type_id"]),
-            float(row["emissions_rating"]),
+            emissions_rating,
             row["created_at"]
         ))
-

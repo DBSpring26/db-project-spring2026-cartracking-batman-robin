@@ -1,6 +1,6 @@
 from pathlib import Path
 import pandas as pd
-from db import get_connection
+
 
 def import_vehicle(cursor):
     file_path = Path(__file__).resolve().parent.parent / "vehicle.parquet"
@@ -21,7 +21,6 @@ def import_vehicle(cursor):
     ON CONFLICT (vehicle_id) DO NOTHING;
     """
 
-    
     for _, row in df.iterrows():
         cursor.execute(query, (
             int(row["vehicle_id"]),

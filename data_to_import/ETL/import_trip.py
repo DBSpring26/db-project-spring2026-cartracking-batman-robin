@@ -1,6 +1,7 @@
 from pathlib import Path
+from decimal import Decimal
 import pandas as pd
-from db import get_connection
+
 
 def import_trip(cursor):
     file_path = Path(__file__).resolve().parent.parent / "trip.parquet"
@@ -29,6 +30,8 @@ def import_trip(cursor):
     """
 
     for _, row in df.iterrows():
+        distance_km = None if pd.isna(row["distance_km"]) else Decimal(str(row["distance_km"]))
+
         cursor.execute(query, (
             int(row["trip_id"]),
             int(row["vehicle_id"]),
@@ -36,5 +39,5 @@ def import_trip(cursor):
             row["end_ts"],
             row["start_geom"],
             row["end_geom"],
-            float(row["distance_km"])
+            distance_km
         ))

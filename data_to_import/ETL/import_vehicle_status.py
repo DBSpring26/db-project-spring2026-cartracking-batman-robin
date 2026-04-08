@@ -1,6 +1,6 @@
 from pathlib import Path
 import pandas as pd
-from db import get_connection
+
 
 def import_vehicle_status(cursor):
     file_path = Path(__file__).resolve().parent.parent / "vehicle_status.parquet"
