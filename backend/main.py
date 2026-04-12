@@ -3,6 +3,7 @@ from routes.vehicle_routes import router as vehicle_router
 from routes.location_ping_routes import location_ping_router, vehicle_ping_router
 from routes.trip_routes import trip_router, vehicle_trip_router
 from routes.road_segment_routes import road_segment_router
+from routes.parking_area_routes import parking_area_router 
 
 app = FastAPI(title="Car Tracking API", version="1.0.0")
 
@@ -12,6 +13,7 @@ app.include_router(vehicle_ping_router)
 app.include_router(trip_router)
 app.include_router(vehicle_trip_router)
 app.include_router(road_segment_router)
+app.include_router(parking_area_router)
 
 
 @app.get("/")
