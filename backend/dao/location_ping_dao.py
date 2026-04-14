@@ -51,7 +51,7 @@ class LocationPingDAO:
             self.conn.commit()
             return row
 
-    def get_location_pings(self, limit: int, offset: int, vehicle_id=None, from_ts=None, to_ts=None):
+    def get_location_pings(self, limit: int, offset: int, vehicle_id=None, from_ts=None, to_ts=None, bbox=None):
         query = """
             SELECT
                 ping_id,
@@ -77,6 +77,16 @@ class LocationPingDAO:
             query += " AND ts <= %s"
             params.append(to_ts)
 
+        if bbox is not None:
+            min_lon, min_lat, max_lon, max_lat = bbox
+            query += """
+                AND ST_Intersects(
+                    geom,
+                    ST_MakeEnvelope(%s, %s, %s, %s, 4326)
+                )
+            """
+            params.extend([min_lon, min_lat, max_lon, max_lat])
+
         query += " ORDER BY ping_id LIMIT %s OFFSET %s"
         params.extend([limit, offset])
 
@@ -98,6 +108,16 @@ class LocationPingDAO:
             if to_ts is not None:
                 count_query += " AND ts <= %s"
                 count_params.append(to_ts)
+
+            if bbox is not None:
+                min_lon, min_lat, max_lon, max_lat = bbox
+                count_query += """
+                    AND ST_Intersects(
+                        geom,
+                        ST_MakeEnvelope(%s, %s, %s, %s, 4326)
+                    )
+                """
+                count_params.extend([min_lon, min_lat, max_lon, max_lat])
 
             cursor.execute(count_query, tuple(count_params))
             count = cursor.fetchone()["total"]
@@ -171,7 +191,7 @@ class LocationPingDAO:
             self.conn.commit()
             return row
 
-    def get_vehicle_pings(self, vehicle_id: int, limit: int, offset: int, from_ts=None, to_ts=None):
+    def get_vehicle_pings(self, vehicle_id: int, limit: int, offset: int, from_ts=None, to_ts=None, bbox=None):
         query = """
             SELECT
                 ping_id,
@@ -192,6 +212,16 @@ class LocationPingDAO:
             query += " AND ts <= %s"
             params.append(to_ts)
 
+        if bbox is not None:
+            min_lon, min_lat, max_lon, max_lat = bbox
+            query += """
+                AND ST_Intersects(
+                    geom,
+                    ST_MakeEnvelope(%s, %s, %s, %s, 4326)
+                )
+            """
+            params.extend([min_lon, min_lat, max_lon, max_lat])
+
         query += " ORDER BY ts DESC LIMIT %s OFFSET %s"
         params.extend([limit, offset])
 
@@ -209,6 +239,16 @@ class LocationPingDAO:
             if to_ts is not None:
                 count_query += " AND ts <= %s"
                 count_params.append(to_ts)
+
+            if bbox is not None:
+                min_lon, min_lat, max_lon, max_lat = bbox
+                count_query += """
+                    AND ST_Intersects(
+                        geom,
+                        ST_MakeEnvelope(%s, %s, %s, %s, 4326)
+                    )
+                """
+                count_params.extend([min_lon, min_lat, max_lon, max_lat])
 
             cursor.execute(count_query, tuple(count_params))
             count = cursor.fetchone()["total"]

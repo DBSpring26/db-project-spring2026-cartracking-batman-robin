@@ -26,9 +26,10 @@ def get_road_segments(
     offset: int = Query(0, ge=0),
     is_oneway: Optional[bool] = None,
     direction: Optional[str] = None,
+    bbox: Optional[str] = Query(None),
     handler: RoadSegmentHandler = Depends(get_handler)
 ):
-    return handler.get_road_segments(limit, offset, is_oneway, direction)
+    return handler.get_road_segments(limit, offset, is_oneway, direction, bbox)
 
 
 @road_segment_router.get("/{road_id}")

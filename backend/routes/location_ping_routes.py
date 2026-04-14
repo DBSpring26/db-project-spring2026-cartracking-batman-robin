@@ -28,10 +28,10 @@ def get_location_pings(
     vehicle_id: Optional[int] = None,
     from_ts: Optional[str] = None,
     to_ts: Optional[str] = None,
+    bbox: Optional[str] = Query(None),
     handler: LocationPingHandler = Depends(get_handler)
 ):
-    return handler.get_location_pings(limit, offset, vehicle_id, from_ts, to_ts)
-
+    return handler.get_location_pings(limit, offset, vehicle_id, from_ts, to_ts, bbox)
 
 @location_ping_router.get("/{ping_id}")
 def get_location_ping_by_id(ping_id: int, handler: LocationPingHandler = Depends(get_handler)):
@@ -60,6 +60,7 @@ def get_vehicle_pings(
     offset: int = Query(0, ge=0),
     from_ts: Optional[str] = None,
     to_ts: Optional[str] = None,
+    bbox: Optional[str] = Query(None),
     handler: LocationPingHandler = Depends(get_handler)
 ):
-    return handler.get_vehicle_pings(vehicle_id, limit, offset, from_ts, to_ts)
+    return handler.get_vehicle_pings(vehicle_id, limit, offset, from_ts, to_ts, bbox)

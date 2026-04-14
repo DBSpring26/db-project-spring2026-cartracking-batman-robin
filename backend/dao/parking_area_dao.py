@@ -45,30 +45,68 @@ class ParkingAreaDAO:
             return row
 
 
-    def get_parking_areas(self, limit, offset):
+    def get_parking_areas(self, limit, offset, bbox=None):
+
+        query = """
+            SELECT
+                parking_area_id,
+                name,
+                capacity,
+                ST_AsGeoJSON(geom)::json as geom,
+                created_at
+            FROM public.parking_area
+            WHERE 1=1
+        """
+
+        params = []
+
+        if bbox is not None:
+
+            min_lon, min_lat, max_lon, max_lat = bbox
+
+            query += """
+                AND ST_Intersects(
+                    geom,
+                    ST_MakeEnvelope(%s, %s, %s, %s, 4326)
+                )
+            """
+
+            params.extend([min_lon, min_lat, max_lon, max_lat])
+
+        query += """
+            ORDER BY parking_area_id
+            LIMIT %s OFFSET %s;
+        """
+
+        params.extend([limit, offset])
 
         with self.conn.cursor() as cursor:
 
-            cursor.execute("""
-                SELECT
-                    parking_area_id,
-                    name,
-                    capacity,
-                    ST_AsGeoJSON(geom)::json as geom,
-                    created_at
-                FROM public.parking_area
-                ORDER BY parking_area_id
-                LIMIT %s OFFSET %s;
-            """,
-            (limit, offset))
-
+            cursor.execute(query, tuple(params))
             items = cursor.fetchall()
 
-            cursor.execute("""
+            count_query = """
                 SELECT COUNT(*) as total
-                FROM public.parking_area;
-            """)
+                FROM public.parking_area
+                WHERE 1=1
+            """
 
+            count_params = []
+
+            if bbox is not None:
+
+                min_lon, min_lat, max_lon, max_lat = bbox
+
+                count_query += """
+                    AND ST_Intersects(
+                        geom,
+                        ST_MakeEnvelope(%s, %s, %s, %s, 4326)
+                    )
+                """
+
+                count_params.extend([min_lon, min_lat, max_lon, max_lat])
+
+            cursor.execute(count_query, tuple(count_params))
             count = cursor.fetchone()["total"]
 
             return {

@@ -47,7 +47,7 @@ class RoadSegmentDAO:
             self.conn.commit()
             return row
 
-    def get_road_segments(self, limit: int, offset: int, is_oneway=None, direction=None):
+    def get_road_segments(self, limit: int, offset: int, is_oneway=None, direction=None, bbox=None):
         query = """
             SELECT
                 road_id,
@@ -70,6 +70,16 @@ class RoadSegmentDAO:
             query += " AND LOWER(direction) = LOWER(%s)"
             params.append(direction)
 
+        if bbox is not None:
+            min_lon, min_lat, max_lon, max_lat = bbox
+            query += """
+                AND ST_Intersects(
+                    geom,
+                    ST_MakeEnvelope(%s, %s, %s, %s, 4326)
+                )
+            """
+            params.extend([min_lon, min_lat, max_lon, max_lat])
+
         query += " ORDER BY road_id LIMIT %s OFFSET %s"
         params.extend([limit, offset])
 
@@ -87,6 +97,16 @@ class RoadSegmentDAO:
             if direction is not None:
                 count_query += " AND LOWER(direction) = LOWER(%s)"
                 count_params.append(direction)
+
+            if bbox is not None:
+                min_lon, min_lat, max_lon, max_lat = bbox
+                count_query += """
+                    AND ST_Intersects(
+                        geom,
+                        ST_MakeEnvelope(%s, %s, %s, %s, 4326)
+                    )
+                """
+                count_params.extend([min_lon, min_lat, max_lon, max_lat])
 
             cursor.execute(count_query, tuple(count_params))
             count = cursor.fetchone()["total"]

@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from dao.parking_area_dao import ParkingAreaDAO
 from utils.pagination import validate_limit_offset
+from utils.bbox import parse_bbox
 
 
 class ParkingAreaHandler:
@@ -15,11 +16,22 @@ class ParkingAreaHandler:
         return self.dao.create_parking_area(data)
 
 
-    def get_parking_areas(self, limit, offset):
+    def get_parking_areas(self, limit, offset, bbox=None):
 
-        validate_limit_offset(limit, offset)
+        try:
+            validate_limit_offset(limit, offset)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
 
-        return self.dao.get_parking_areas(limit, offset)
+        bbox_values = None
+
+        if bbox:
+            try:
+                bbox_values = parse_bbox(bbox)
+            except ValueError as e:
+                raise HTTPException(400, str(e))
+
+        return self.dao.get_parking_areas(limit, offset, bbox_values)
 
 
     def get_parking_area_by_id(self, parking_area_id):

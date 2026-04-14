@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from dao.road_segment_dao import RoadSegmentDAO
 from utils.pagination import validate_limit_offset
+from utils.bbox import parse_bbox
 
 
 class RoadSegmentHandler:
@@ -10,13 +11,34 @@ class RoadSegmentHandler:
     def create_road_segment(self, data: dict):
         return self.dao.create_road_segment(data)
 
-    def get_road_segments(self, limit: int, offset: int, is_oneway=None, direction=None):
+    def get_road_segments(
+        self,
+        limit: int,
+        offset: int,
+        is_oneway=None,
+        direction=None,
+        bbox=None
+    ):
         try:
             validate_limit_offset(limit, offset)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-        return self.dao.get_road_segments(limit, offset, is_oneway, direction)
+        bbox_values = None
+
+        if bbox:
+            try:
+                bbox_values = parse_bbox(bbox)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+
+        return self.dao.get_road_segments(
+            limit,
+            offset,
+            is_oneway,
+            direction,
+            bbox_values
+        )
 
     def get_road_segment_by_id(self, road_id: int):
         if road_id <= 0:
