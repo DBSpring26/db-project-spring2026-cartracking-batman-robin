@@ -21,7 +21,7 @@ def get_handler():
         conn.close()
 
 
-@parking_area_router.post("")
+@parking_area_router.post("",status_code=201)
 def create_parking_area(
     payload: ParkingAreaCreate,
     handler: ParkingAreaHandler = Depends(get_handler)
