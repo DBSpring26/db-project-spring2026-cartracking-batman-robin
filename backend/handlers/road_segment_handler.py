@@ -17,6 +17,8 @@ class RoadSegmentHandler:
         offset: int,
         is_oneway=None,
         direction=None,
+        name=None,
+        speed_limit_kph=None,
         bbox=None
     ):
         try:
@@ -37,6 +39,8 @@ class RoadSegmentHandler:
             offset,
             is_oneway,
             direction,
+            name,
+            speed_limit_kph,
             bbox_values
         )
 
@@ -45,8 +49,10 @@ class RoadSegmentHandler:
             raise HTTPException(status_code=400, detail="road_id must be a positive integer.")
 
         row = self.dao.get_road_segment_by_id(road_id)
+
         if not row:
             raise HTTPException(status_code=404, detail="road_id does not exist.")
+
         return row
 
     def update_road_segment(self, road_id: int, data: dict):
@@ -54,6 +60,7 @@ class RoadSegmentHandler:
             raise HTTPException(status_code=400, detail="road_id must be a positive integer.")
 
         existing = self.dao.get_road_segment_by_id(road_id)
+
         if not existing:
             raise HTTPException(status_code=404, detail="road_id does not exist.")
 
@@ -67,10 +74,12 @@ class RoadSegmentHandler:
             raise HTTPException(status_code=400, detail="road_id must be a positive integer.")
 
         existing = self.dao.get_road_segment_by_id(road_id)
+
         if not existing:
             raise HTTPException(status_code=404, detail="road_id does not exist.")
 
         deleted = self.dao.delete_road_segment(road_id)
+
         return {
             "message": "Road segment deleted successfully.",
             "road_id": deleted["road_id"]

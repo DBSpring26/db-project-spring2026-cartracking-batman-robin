@@ -43,11 +43,21 @@ class RoadSegmentDAO:
                     data["direction"],
                 )
             )
+
             row = cursor.fetchone()
             self.conn.commit()
             return row
 
-    def get_road_segments(self, limit: int, offset: int, is_oneway=None, direction=None, bbox=None):
+    def get_road_segments(
+        self,
+        limit: int,
+        offset: int,
+        is_oneway=None,
+        direction=None,
+        name=None,
+        speed_limit_kph=None,
+        bbox=None
+    ):
         query = """
             SELECT
                 road_id,
@@ -60,6 +70,7 @@ class RoadSegmentDAO:
             FROM public.road_segment
             WHERE 1=1
         """
+
         params = []
 
         if is_oneway is not None:
@@ -70,14 +81,24 @@ class RoadSegmentDAO:
             query += " AND LOWER(direction) = LOWER(%s)"
             params.append(direction)
 
+        if name is not None:
+            query += " AND name = %s"
+            params.append(name)
+
+        if speed_limit_kph is not None:
+            query += " AND speed_limit_kph = %s"
+            params.append(speed_limit_kph)
+
         if bbox is not None:
             min_lon, min_lat, max_lon, max_lat = bbox
+
             query += """
                 AND ST_Intersects(
                     geom,
                     ST_MakeEnvelope(%s, %s, %s, %s, 4326)
                 )
             """
+
             params.extend([min_lon, min_lat, max_lon, max_lat])
 
         query += " ORDER BY road_id LIMIT %s OFFSET %s"
@@ -87,7 +108,12 @@ class RoadSegmentDAO:
             cursor.execute(query, tuple(params))
             items = cursor.fetchall()
 
-            count_query = "SELECT COUNT(*) AS total FROM public.road_segment WHERE 1=1"
+            count_query = """
+                SELECT COUNT(*) AS total
+                FROM public.road_segment
+                WHERE 1=1
+            """
+
             count_params = []
 
             if is_oneway is not None:
@@ -98,14 +124,24 @@ class RoadSegmentDAO:
                 count_query += " AND LOWER(direction) = LOWER(%s)"
                 count_params.append(direction)
 
+            if name is not None:
+                count_query += " AND name = %s"
+                count_params.append(name)
+
+            if speed_limit_kph is not None:
+                count_query += " AND speed_limit_kph = %s"
+                count_params.append(speed_limit_kph)
+
             if bbox is not None:
                 min_lon, min_lat, max_lon, max_lat = bbox
+
                 count_query += """
                     AND ST_Intersects(
                         geom,
                         ST_MakeEnvelope(%s, %s, %s, %s, 4326)
                     )
                 """
+
                 count_params.extend([min_lon, min_lat, max_lon, max_lat])
 
             cursor.execute(count_query, tuple(count_params))
@@ -135,6 +171,7 @@ class RoadSegmentDAO:
                 """,
                 (road_id,)
             )
+
             return cursor.fetchone()
 
     def update_road_segment(self, road_id: int, data: dict):
@@ -146,8 +183,10 @@ class RoadSegmentDAO:
                 coords = value["coordinates"]
                 linestring = ", ".join([f"{lon} {lat}" for lon, lat in coords])
                 wkt = f"LINESTRING({linestring})"
+
                 fields.append("geom = ST_GeomFromText(%s, 4326)")
                 values.append(wkt)
+
             else:
                 fields.append(f"{key} = %s")
                 values.append(value)
@@ -177,9 +216,14 @@ class RoadSegmentDAO:
     def delete_road_segment(self, road_id: int):
         with self.conn.cursor() as cursor:
             cursor.execute(
-                "DELETE FROM public.road_segment WHERE road_id = %s RETURNING road_id;",
+                """
+                DELETE FROM public.road_segment
+                WHERE road_id = %s
+                RETURNING road_id;
+                """,
                 (road_id,)
             )
+
             row = cursor.fetchone()
             self.conn.commit()
             return row

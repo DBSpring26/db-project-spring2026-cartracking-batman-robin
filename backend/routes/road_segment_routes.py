@@ -16,24 +16,40 @@ def get_handler():
 
 
 @road_segment_router.post("", status_code=201)
-def create_road_segment(payload: RoadSegmentCreate, handler: RoadSegmentHandler = Depends(get_handler)):
+def create_road_segment(
+    payload: RoadSegmentCreate,
+    handler: RoadSegmentHandler = Depends(get_handler)
+):
     return handler.create_road_segment(payload.model_dump())
 
 
 @road_segment_router.get("")
 def get_road_segments(
-    limit: int = Query(100, ge=0),
+    limit: int = Query(20, ge=0),
     offset: int = Query(0, ge=0),
     is_oneway: Optional[bool] = None,
     direction: Optional[str] = None,
-    bbox: Optional[str] = Query(None),
+    name: Optional[str] = None,
+    speed_limit_kph: Optional[int] = None,
+    bbox: Optional[str] = None,
     handler: RoadSegmentHandler = Depends(get_handler)
 ):
-    return handler.get_road_segments(limit, offset, is_oneway, direction, bbox)
+    return handler.get_road_segments(
+        limit,
+        offset,
+        is_oneway,
+        direction,
+        name,
+        speed_limit_kph,
+        bbox
+    )
 
 
 @road_segment_router.get("/{road_id}")
-def get_road_segment_by_id(road_id: int, handler: RoadSegmentHandler = Depends(get_handler)):
+def get_road_segment_by_id(
+    road_id: int,
+    handler: RoadSegmentHandler = Depends(get_handler)
+):
     return handler.get_road_segment_by_id(road_id)
 
 
@@ -48,5 +64,8 @@ def update_road_segment(
 
 
 @road_segment_router.delete("/{road_id}")
-def delete_road_segment(road_id: int, handler: RoadSegmentHandler = Depends(get_handler)):
+def delete_road_segment(
+    road_id: int,
+    handler: RoadSegmentHandler = Depends(get_handler)
+):
     return handler.delete_road_segment(road_id)

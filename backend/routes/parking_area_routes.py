@@ -21,7 +21,7 @@ def get_handler():
         conn.close()
 
 
-@parking_area_router.post("",status_code=201)
+@parking_area_router.post("", status_code=201)
 def create_parking_area(
     payload: ParkingAreaCreate,
     handler: ParkingAreaHandler = Depends(get_handler)
@@ -31,12 +31,14 @@ def create_parking_area(
 
 @parking_area_router.get("")
 def get_parking_areas(
-    limit: int = Query(100, ge=0),
+    limit: int = Query(20, ge=0),
     offset: int = Query(0, ge=0),
-    bbox: Optional[str] = None,
+    name: Optional[str] = None,
+    capacity: Optional[int] = None,
+    bbox: Optional[str] = Query(None),
     handler: ParkingAreaHandler = Depends(get_handler)
 ):
-    return handler.get_parking_areas(limit, offset, bbox)
+    return handler.get_parking_areas(limit, offset, name, capacity, bbox)
 
 
 @parking_area_router.get("/{parking_area_id}")
