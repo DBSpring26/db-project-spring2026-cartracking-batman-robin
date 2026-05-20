@@ -11,11 +11,9 @@ class LocationPingDAO:
             return cursor.fetchone() is not None
 
     def create_location_ping(self, data: dict):
-
         lon, lat = data["geom"]["coordinates"]
 
         with self.conn.cursor() as cursor:
-
             cursor.execute(
                 """
                 INSERT INTO public.location_ping (
@@ -51,9 +49,7 @@ class LocationPingDAO:
             )
 
             row = cursor.fetchone()
-
             self.conn.commit()
-
             return row
 
     def get_location_pings(
@@ -65,7 +61,6 @@ class LocationPingDAO:
         to_ts=None,
         bbox=None
     ):
-
         query = """
             SELECT
                 ping_id,
@@ -93,7 +88,6 @@ class LocationPingDAO:
             params.append(to_ts)
 
         if bbox is not None:
-
             min_lon, min_lat, max_lon, max_lat = bbox
 
             query += """
@@ -118,9 +112,7 @@ class LocationPingDAO:
         params.extend([limit, offset])
 
         with self.conn.cursor() as cursor:
-
             cursor.execute(query, tuple(params))
-
             items = cursor.fetchall()
 
             count_query = """
@@ -144,7 +136,6 @@ class LocationPingDAO:
                 count_params.append(to_ts)
 
             if bbox is not None:
-
                 min_lon, min_lat, max_lon, max_lat = bbox
 
                 count_query += """
@@ -162,7 +153,6 @@ class LocationPingDAO:
                 ])
 
             cursor.execute(count_query, tuple(count_params))
-
             count = cursor.fetchone()["total"]
 
         return {
@@ -173,9 +163,7 @@ class LocationPingDAO:
         }
 
     def get_location_ping_by_id(self, ping_id: int):
-
         with self.conn.cursor() as cursor:
-
             cursor.execute(
                 """
                 SELECT
@@ -194,14 +182,11 @@ class LocationPingDAO:
             return cursor.fetchone()
 
     def update_location_ping(self, ping_id: int, data: dict):
-
         fields = []
         values = []
 
         for key, value in data.items():
-
             if key == "geom":
-
                 lon, lat = value["coordinates"]
 
                 fields.append(
@@ -209,9 +194,7 @@ class LocationPingDAO:
                 )
 
                 values.extend([lon, lat])
-
             else:
-
                 fields.append(f"{key} = %s")
                 values.append(value)
 
@@ -231,19 +214,13 @@ class LocationPingDAO:
         """
 
         with self.conn.cursor() as cursor:
-
             cursor.execute(query, tuple(values))
-
             row = cursor.fetchone()
-
             self.conn.commit()
-
             return row
 
     def delete_location_ping(self, ping_id: int):
-
         with self.conn.cursor() as cursor:
-
             cursor.execute(
                 """
                 DELETE FROM public.location_ping
@@ -254,9 +231,7 @@ class LocationPingDAO:
             )
 
             row = cursor.fetchone()
-
             self.conn.commit()
-
             return row
 
     def get_vehicle_pings(
@@ -268,7 +243,6 @@ class LocationPingDAO:
         to_ts=None,
         bbox=None
     ):
-
         query = """
             SELECT
                 ping_id,
@@ -291,7 +265,6 @@ class LocationPingDAO:
             params.append(to_ts)
 
         if bbox is not None:
-
             min_lon, min_lat, max_lon, max_lat = bbox
 
             query += """
@@ -316,9 +289,7 @@ class LocationPingDAO:
         params.extend([limit, offset])
 
         with self.conn.cursor() as cursor:
-
             cursor.execute(query, tuple(params))
-
             items = cursor.fetchall()
 
             count_query = """
@@ -338,7 +309,6 @@ class LocationPingDAO:
                 count_params.append(to_ts)
 
             if bbox is not None:
-
                 min_lon, min_lat, max_lon, max_lat = bbox
 
                 count_query += """
@@ -356,7 +326,6 @@ class LocationPingDAO:
                 ])
 
             cursor.execute(count_query, tuple(count_params))
-
             count = cursor.fetchone()["total"]
 
         return {
@@ -375,7 +344,6 @@ class LocationPingDAO:
         offset: int,
         bbox=None
     ):
-
         query = """
             SELECT DISTINCT ON (vehicle_id)
                 ping_id,
@@ -391,7 +359,6 @@ class LocationPingDAO:
         params = []
 
         if bbox is not None:
-
             min_lon, min_lat, max_lon, max_lat = bbox
 
             query += """
@@ -416,9 +383,7 @@ class LocationPingDAO:
         params.extend([limit, offset])
 
         with self.conn.cursor() as cursor:
-
             cursor.execute(query, tuple(params))
-
             items = cursor.fetchall()
 
             count_query = """
@@ -430,7 +395,6 @@ class LocationPingDAO:
             count_params = []
 
             if bbox is not None:
-
                 min_lon, min_lat, max_lon, max_lat = bbox
 
                 count_query += """
@@ -448,7 +412,6 @@ class LocationPingDAO:
                 ])
 
             cursor.execute(count_query, tuple(count_params))
-
             count = cursor.fetchone()["total"]
 
         return {
@@ -464,24 +427,26 @@ class LocationPingDAO:
         start_ts: str,
         end_ts: str
     ):
-
         query = """
             SELECT
-                ping_id,
-                vehicle_id,
-                ts,
-                ST_AsGeoJSON(geom)::json AS geom,
-                speed_kph,
-                heading_deg
-            FROM public.location_ping
-            WHERE vehicle_id = %s
-              AND ts >= %s
-              AND ts <= %s
-            ORDER BY ts ASC
+                t.trip_id,
+                lp.ping_id,
+                lp.vehicle_id,
+                lp.ts,
+                ST_AsGeoJSON(lp.geom)::json AS geom,
+                lp.speed_kph,
+                lp.heading_deg
+            FROM public.location_ping lp
+            LEFT JOIN public.trip t
+              ON t.vehicle_id = lp.vehicle_id
+             AND lp.ts BETWEEN t.start_ts AND t.end_ts
+            WHERE lp.vehicle_id = %s
+              AND lp.ts >= %s
+              AND lp.ts <= %s
+            ORDER BY lp.ts ASC
         """
 
         with self.conn.cursor() as cursor:
-
             cursor.execute(
                 query,
                 (
@@ -491,10 +456,24 @@ class LocationPingDAO:
                 )
             )
 
-            return cursor.fetchall()
+            rows = cursor.fetchall()
+
+        trip_ids = []
+
+        for row in rows:
+            if row["trip_id"] is not None and row["trip_id"] not in trip_ids:
+                trip_ids.append(row["trip_id"])
+
+        return {
+            "vehicle_id": vehicle_id,
+            "start_ts": start_ts,
+            "end_ts": end_ts,
+            "trip_ids": trip_ids,
+            "items": rows,
+            "count": len(rows)
+        }
 
     def get_pings_per_day(self):
-
         query = """
             SELECT
                 DATE(ts) AS day,
@@ -505,7 +484,10 @@ class LocationPingDAO:
         """
 
         with self.conn.cursor() as cursor:
-
             cursor.execute(query)
+            items = cursor.fetchall()
 
-            return cursor.fetchall()
+        return {
+            "items": items,
+            "count": len(items)
+        }
