@@ -8,15 +8,15 @@ from typing import Optional
 def parse_bbox(bbox: Optional[str]):
     if bbox is None:
         return None
-    
+
     try:
         parts = [float(x) for x in bbox.split(",")]
 
         if len(parts) != 4:
             raise ValueError
-        
+
         return parts
-    
+
     except:
         raise HTTPException(
             status_code=400,
@@ -30,7 +30,6 @@ class LocationPingHandler:
         self.dao = LocationPingDAO(conn)
         self.vehicle_dao = VehicleDAO(conn)
 
-
     def create_location_ping(self, data: dict):
 
         if not self.dao.vehicle_exists(data["vehicle_id"]):
@@ -41,7 +40,6 @@ class LocationPingHandler:
 
         return self.dao.create_location_ping(data)
 
-
     def get_location_pings(
         self,
         limit: int,
@@ -49,7 +47,7 @@ class LocationPingHandler:
         vehicle_id=None,
         from_ts=None,
         to_ts=None,
-        bbox=None  
+        bbox=None
     ):
 
         try:
@@ -57,10 +55,16 @@ class LocationPingHandler:
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-        bbox_parsed = parse_bbox(bbox) 
+        bbox_parsed = parse_bbox(bbox)
 
-        return self.dao.get_location_pings(limit, offset, vehicle_id, from_ts, to_ts, bbox_parsed)
-
+        return self.dao.get_location_pings(
+            limit,
+            offset,
+            vehicle_id,
+            from_ts,
+            to_ts,
+            bbox_parsed
+        )
 
     def get_location_ping_by_id(self, ping_id: int):
 
@@ -79,7 +83,6 @@ class LocationPingHandler:
             )
 
         return row
-
 
     def update_location_ping(self, ping_id: int, data: dict):
 
@@ -111,7 +114,6 @@ class LocationPingHandler:
 
         return self.dao.update_location_ping(ping_id, data)
 
-
     def delete_location_ping(self, ping_id: int):
 
         if ping_id <= 0:
@@ -135,7 +137,6 @@ class LocationPingHandler:
             "ping_id": deleted["ping_id"]
         }
 
-
     def get_vehicle_pings(
         self,
         vehicle_id: int,
@@ -143,7 +144,7 @@ class LocationPingHandler:
         offset: int,
         from_ts=None,
         to_ts=None,
-        bbox=None 
+        bbox=None
     ):
 
         if vehicle_id <= 0:
@@ -167,4 +168,70 @@ class LocationPingHandler:
 
         bbox_parsed = parse_bbox(bbox)
 
-        return self.dao.get_vehicle_pings(vehicle_id, limit, offset, from_ts, to_ts, bbox_parsed)
+        return self.dao.get_vehicle_pings(
+            vehicle_id,
+            limit,
+            offset,
+            from_ts,
+            to_ts,
+            bbox_parsed
+        )
+
+    def get_latest_vehicle_pings(
+        self,
+        limit: int,
+        offset: int,
+        bbox=None
+    ):
+
+        try:
+            validate_limit_offset(limit, offset)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+        bbox_parsed = parse_bbox(bbox)
+
+        return self.dao.get_latest_vehicle_pings(
+            limit,
+            offset,
+            bbox_parsed
+        )
+
+    def get_breadcrumb(
+        self,
+        vehicle_id: int,
+        start_ts: str,
+        end_ts: str
+    ):
+
+        if vehicle_id <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="vehicle_id must be a positive integer."
+            )
+
+        vehicle = self.vehicle_dao.get_vehicle_by_id(vehicle_id)
+
+        if not vehicle:
+            raise HTTPException(
+                status_code=404,
+                detail="vehicle_id does not exist."
+            )
+
+        if not start_ts or not end_ts:
+            raise HTTPException(
+                status_code=400,
+                detail="start_ts and end_ts are required."
+            )
+
+        return self.dao.get_breadcrumb(
+            vehicle_id,
+            start_ts,
+            end_ts
+        )
+
+    def get_pings_per_day(self):
+
+        return {
+            "items": self.dao.get_pings_per_day()
+        }
